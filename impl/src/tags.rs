@@ -4,10 +4,12 @@ use quote::quote;
 use syn::parse::{Parse, ParseStream, Result};
 use syn::spanned::Spanned;
 
+pub struct FallbackAttributes(pub syn::Block);
 pub struct OpenTag {
     pub name: syn::Path,
     pub attributes: ElementAttributes,
     pub self_closing: bool,
+    pub fallback_attributes: Option<FallbackAttributes>,
     pub is_custom_element: bool,
 }
 
@@ -33,6 +35,22 @@ impl Parse for OpenTag {
         let name = name_or_fragment(maybe_name);
         let is_custom_element = is_custom_element_name(&name);
         let attributes = ElementAttributes::parse(input, is_custom_element)?;
+
+        let fallback = if input.peek(syn::token::Brace) {
+            let block = input.parse::<syn::Block>()?;
+            if !is_custom_element {
+                abort!(
+                    block.span(),
+                    "Only custom components can have fallback attributes",
+                );
+            }
+            Some(FallbackAttributes(block))
+        } else {
+            None
+        };
+
+        if !is_custom_element && fallback.is_some() {}
+
         let self_closing = input.parse::<syn::Token![/]>().is_ok();
         input.parse::<syn::Token![>]>()?;
 
@@ -41,6 +59,7 @@ impl Parse for OpenTag {
             attributes,
             self_closing,
             is_custom_element,
+            fallback_attributes: fallback,
         })
     }
 }

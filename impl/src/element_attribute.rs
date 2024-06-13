@@ -8,13 +8,18 @@ pub type AttributeKey = syn::punctuated::Punctuated<syn::Ident, syn::Token![-]>;
 
 pub enum ElementAttribute {
     Punned(AttributeKey),
+    WithValueLit(AttributeKey, syn::LitStr),
     WithValue(AttributeKey, syn::Block),
+    WithValueOpt(AttributeKey, syn::Block),
 }
 
 impl ElementAttribute {
     pub fn ident(&self) -> &AttributeKey {
         match self {
-            Self::Punned(ident) | Self::WithValue(ident, _) => ident,
+            Self::Punned(ident)
+            | Self::WithValue(ident, _)
+            | Self::WithValueOpt(ident, _)
+            | Self::WithValueLit(ident, _) => ident,
         }
     }
 
@@ -24,7 +29,7 @@ impl ElementAttribute {
 
     pub fn value_tokens(&self) -> proc_macro2::TokenStream {
         match self {
-            Self::WithValue(_, value) => {
+            Self::WithValue(_, value) | Self::WithValueOpt(_, value) => {
                 if value.stmts.len() == 1 {
                     let first = &value.stmts[0];
                     quote!(#first)
@@ -32,7 +37,17 @@ impl ElementAttribute {
                     quote!(#value)
                 }
             }
+            Self::WithValueLit(_, value) => {
+                quote!(#value)
+            }
             Self::Punned(ident) => quote!(#ident),
+        }
+    }
+
+    pub fn is_optional(&self) -> bool {
+        match self {
+            Self::WithValueOpt(_, _) => true,
+            _ => false,
         }
     }
 
@@ -45,6 +60,11 @@ impl ElementAttribute {
     }
 
     pub fn validate_for_custom_element(self) -> Result<Self> {
+        if self.is_optional() {
+            let error_message =
+                "Cannot use optional value syntax on custom components. Try to remove `?`";
+            return Err(syn::Error::new(self.ident().span(), error_message));
+        }
         if self.idents().len() < 2 {
             Ok(self)
         } else {
@@ -102,8 +122,19 @@ impl Parse for ElementAttribute {
         }
 
         input.parse::<syn::Token![=]>()?;
-        let value = input.parse::<syn::Block>()?;
+        let value = if input.peek(syn::token::Brace) {
+            input.parse::<syn::Block>()?
+        } else {
+            let v = input.parse::<syn::LitStr>()?;
+            return Ok(Self::WithValueLit(name, v));
+        };
 
-        Ok(Self::WithValue(name, value))
+        let optional = input.peek(syn::Token![?]);
+        if optional {
+            input.parse::<syn::Token![?]>().unwrap();
+            Ok(Self::WithValueOpt(name, value))
+        } else {
+            Ok(Self::WithValue(name, value))
+        }
     }
 }

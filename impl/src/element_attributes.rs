@@ -1,5 +1,6 @@
 use crate::children::Children;
 use crate::element_attribute::ElementAttribute;
+use crate::tags::FallbackAttributes;
 use proc_macro_error::emit_error;
 use quote::{quote, ToTokens};
 use std::collections::HashSet;
@@ -19,12 +20,14 @@ impl ElementAttributes {
         Self { attributes }
     }
 
-    pub fn for_custom_element<'c>(
+    pub fn for_custom_element<'f, 'c>(
         &self,
+        fallback_attributes: Option<&'f FallbackAttributes>,
         children: &'c Children,
-    ) -> CustomElementAttributes<'_, 'c> {
+    ) -> CustomElementAttributes<'_, 'f, 'c> {
         CustomElementAttributes {
             attributes: &self.attributes,
+            fallback_attributes,
             children,
         }
     }
@@ -73,12 +76,13 @@ impl Parse for ElementAttributes {
     }
 }
 
-pub struct CustomElementAttributes<'a, 'c> {
+pub struct CustomElementAttributes<'a, 'f, 'c> {
     attributes: &'a Attributes,
+    fallback_attributes: Option<&'f FallbackAttributes>,
     children: &'c Children,
 }
 
-impl<'a, 'c> ToTokens for CustomElementAttributes<'a, 'c> {
+impl<'a, 'f, 'c> ToTokens for CustomElementAttributes<'a,'f, 'c> {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let mut attrs: Vec<_> = self
             .attributes
@@ -100,11 +104,22 @@ impl<'a, 'c> ToTokens for CustomElementAttributes<'a, 'c> {
             });
         }
 
-        let quoted = if attrs.len() == 0 {
+        let quoted = if attrs.len() == 0 && !self.fallback_attributes.is_some() {
             quote!()
-        } else {
+        } else if let Some(FallbackAttributes(block)) = self.fallback_attributes{
+            let inner = &block.stmts[0];
+            if attrs.len() > 0 {
+                quote!({ #(#attrs),*,  #inner})
+            }
+            else {
+                quote!({ #inner})
+            }
+        }
+        else {
             quote!({ #(#attrs),* })
-        };
+        }
+        ;
+
 
         quoted.to_tokens(tokens);
     }
@@ -130,8 +145,23 @@ impl<'a> ToTokens for SimpleElementAttributes<'a> {
                     });
                     let value = attribute.value_tokens();
 
-                    quote! {
-                        hm.insert(#ident, ::std::borrow::Cow::from(#value));
+                    if attribute.is_optional() {
+                        let mut iter = attribute.ident().iter();
+                        let first_word = iter.next().unwrap().unraw();
+                        let ident_underscored = iter.fold(first_word.to_string(), |acc, curr| {
+                            format!("{}_{}", acc, curr.unraw())
+                        });
+                        let attr_ident = syn::Ident::new(&ident_underscored, attribute.ident().span());
+
+                        quote! {
+                            if let ::std::option::Option::Some(#attr_ident) = #value {
+                                hm.insert(#ident, ::std::borrow::Cow::from(#attr_ident));
+                            }
+                        }
+                    } else {
+                        quote! {
+                            hm.insert(#ident, ::std::borrow::Cow::from(#value));
+                        }
                     }
                 })
                 .collect();

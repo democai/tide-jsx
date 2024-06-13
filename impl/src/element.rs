@@ -1,12 +1,13 @@
 use crate::children::Children;
 use crate::element_attributes::ElementAttributes;
-use crate::tags::{ClosingTag, OpenTag};
+use crate::tags::{ClosingTag, FallbackAttributes, OpenTag};
 use quote::{quote, ToTokens};
 use syn::parse::{Parse, ParseStream, Result};
 
 pub struct Element {
     name: syn::Path,
     attributes: ElementAttributes,
+    fallback_attributes: Option<FallbackAttributes>,
     children: Children,
 }
 
@@ -26,6 +27,7 @@ impl Parse for Element {
         Ok(Element {
             name: open_tag.name,
             attributes: open_tag.attributes,
+            fallback_attributes: open_tag.fallback_attributes,
             children,
         })
     }
@@ -49,7 +51,9 @@ impl ToTokens for Element {
         let name = &self.name;
 
         let declaration = if self.is_custom_element() {
-            let attrs = self.attributes.for_custom_element(&self.children);
+            let attrs = self
+                .attributes
+                .for_custom_element(self.fallback_attributes.as_ref(), &self.children);
             quote! { #name #attrs }
         } else {
             let attrs = self.attributes.for_simple_element();
