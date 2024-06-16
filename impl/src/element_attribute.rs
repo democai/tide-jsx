@@ -11,6 +11,7 @@ pub enum ElementAttribute {
     WithValueLit(AttributeKey, syn::LitStr),
     WithValue(AttributeKey, syn::Block),
     WithValueOpt(AttributeKey, syn::Block),
+    WithValueBool(AttributeKey, syn::Block),
 }
 
 impl ElementAttribute {
@@ -19,7 +20,8 @@ impl ElementAttribute {
             Self::Punned(ident)
             | Self::WithValue(ident, _)
             | Self::WithValueOpt(ident, _)
-            | Self::WithValueLit(ident, _) => ident,
+            | Self::WithValueLit(ident, _)
+            | Self::WithValueBool(ident, _) => ident,
         }
     }
 
@@ -29,7 +31,9 @@ impl ElementAttribute {
 
     pub fn value_tokens(&self) -> proc_macro2::TokenStream {
         match self {
-            Self::WithValue(_, value) | Self::WithValueOpt(_, value) => {
+            Self::WithValue(_, value)
+            | Self::WithValueOpt(_, value)
+            | Self::WithValueBool(_, value) => {
                 if value.stmts.len() == 1 {
                     let first = &value.stmts[0];
                     quote!(#first)
@@ -51,6 +55,13 @@ impl ElementAttribute {
         }
     }
 
+    pub fn is_boolean(&self) -> bool {
+        match self {
+            Self::WithValueBool(_, _) => true,
+            _ => false,
+        }
+    }
+
     pub fn validate(self, is_custom_element: bool) -> Result<Self> {
         if is_custom_element {
             self.validate_for_custom_element()
@@ -65,6 +76,14 @@ impl ElementAttribute {
                 "Cannot use optional value syntax on custom components. Try to remove `?`";
             return Err(syn::Error::new(self.ident().span(), error_message));
         }
+
+        if self.is_boolean() {
+            let error_message =
+                "Cannot use boolean value syntax on custom components. Try to remove `!`";
+            return Err(syn::Error::new(self.ident().span(), error_message));
+        }
+
+
         if self.idents().len() < 2 {
             Ok(self)
         } else {
@@ -129,11 +148,14 @@ impl Parse for ElementAttribute {
             return Ok(Self::WithValueLit(name, v));
         };
 
-        let optional = input.peek(syn::Token![?]);
-        if optional {
+        if input.peek(syn::Token![?]) {
             input.parse::<syn::Token![?]>().unwrap();
             Ok(Self::WithValueOpt(name, value))
-        } else {
+        } else if input.peek(syn::Token![!])  {
+            input.parse::<syn::Token![!]>().unwrap();
+            Ok(Self::WithValueBool(name, value))
+        }
+        else {
             Ok(Self::WithValue(name, value))
         }
     }

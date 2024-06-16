@@ -158,7 +158,15 @@ impl<'a> ToTokens for SimpleElementAttributes<'a> {
                                 hm.insert(#ident, ::std::borrow::Cow::from(#attr_ident));
                             }
                         }
-                    } else {
+                    }
+                    else if attribute.is_boolean() {
+                        quote! {
+                            if #value {
+                                hm.insert(#ident, std::borrow::Cow::from(""));
+                            }
+                        }
+                    }
+                    else {
                         quote! {
                             hm.insert(#ident, ::std::borrow::Cow::from(#value));
                         }
