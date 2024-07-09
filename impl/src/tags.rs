@@ -10,7 +10,6 @@ pub struct OpenTag {
     pub attributes: ElementAttributes,
     pub self_closing: bool,
     pub fallback_attributes: Option<FallbackAttributes>,
-    pub is_custom_element: bool,
 }
 
 fn name_or_fragment(maybe_name: Result<syn::Path>) -> syn::Path {
@@ -58,7 +57,6 @@ impl Parse for OpenTag {
             name,
             attributes,
             self_closing,
-            is_custom_element,
             fallback_attributes: fallback,
         })
     }
