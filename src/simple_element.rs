@@ -8,7 +8,7 @@ type Attributes<'a> = Option<HashMap<&'a str, Cow<'a, str>>>;
 
 /// Simple HTML element tag
 #[derive(Debug, Clone)]
-pub struct SimpleElement<'a, T: Render> {
+pub struct SimpleElement<'a, T: Render + Clone> {
     /// the HTML tag name, like `html`, `head`, `body`, `link`...
     pub tag_name: &'a str,
     pub attributes: Attributes<'a>,
@@ -29,7 +29,7 @@ fn write_attributes<'a, W: Write>(maybe_attributes: Attributes<'a>, writer: &mut
     }
 }
 
-impl<T: Render> Render for SimpleElement<'_, T> {
+impl<T: Render + Clone> Render for SimpleElement<'_, T> {
     fn render_into<W: Write>(self, writer: &mut W) -> Result {
         match self.contents {
             None => {
