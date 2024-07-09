@@ -1,7 +1,7 @@
 use crate::Render;
 use std::fmt::{Result, Write};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HTML5Doctype;
 
 impl Render for HTML5Doctype {
