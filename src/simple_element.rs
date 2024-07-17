@@ -35,7 +35,7 @@ impl<T: Render + Clone> Render for SimpleElement<'_, T> {
             None => {
                 write!(writer, "<{}", self.tag_name)?;
                 write_attributes(self.attributes, writer)?;
-                write!(writer, "</{}>", self.tag_name)
+                write!(writer, "></{}>", self.tag_name)
             }
             Some(renderable) => {
                 write!(writer, "<{}", self.tag_name)?;
