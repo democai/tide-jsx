@@ -33,9 +33,15 @@ impl<T: Render + Clone> Render for SimpleElement<'_, T> {
     fn render_into<W: Write>(self, writer: &mut W) -> Result {
         match self.contents {
             None => {
-                write!(writer, "<{}", self.tag_name)?;
-                write_attributes(self.attributes, writer)?;
-                write!(writer, "></{}>", self.tag_name)
+                if self.is_void_tag() {
+                    write!(writer, "<{}", self.tag_name)?;
+                    write_attributes(self.attributes, writer)?;
+                    write!(writer, " />")
+                } else {
+                    write!(writer, "<{}", self.tag_name)?;
+                    write_attributes(self.attributes, writer)?;
+                    write!(writer, "></{}>", self.tag_name)
+                }
             }
             Some(renderable) => {
                 write!(writer, "<{}", self.tag_name)?;
@@ -45,5 +51,28 @@ impl<T: Render + Clone> Render for SimpleElement<'_, T> {
                 write!(writer, "</{}>", self.tag_name)
             }
         }
+    }
+}
+
+impl<T: Render + Clone> SimpleElement<'_, T> {
+    fn is_void_tag(&self) -> bool {
+        matches!(
+            self.tag_name,
+            "area"
+                | "base"
+                | "br"
+                | "col"
+                | "command"
+                | "embed"
+                | "hr"
+                | "img"
+                | "input"
+                | "link"
+                | "meta"
+                | "param"
+                | "source"
+                | "track"
+                | "wbr"
+        )
     }
 }
