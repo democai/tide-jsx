@@ -7,7 +7,7 @@ pub struct Fragment<T: Render + Clone> {
 }
 
 impl<T: Render + Clone> Render for Fragment<T> {
-    fn render_into<W: Write>(self, writer: &mut W) -> Result {
+    fn render_into<W: Write>(&mut self, writer: &mut W) -> Result {
         self.children.render_into(writer)
     }
 }

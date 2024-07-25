@@ -1,5 +1,5 @@
-use crate::Render;
 use crate::Fragment;
+use crate::Render;
 
 /// Conditionally render one of two components based on a boolean condition.
 ///
@@ -36,8 +36,12 @@ where
     R2: Render + Clone,
 {
     if condition {
-        Fragment { children: (Some(f1()), None) }
+        Fragment {
+            children: (Some(f1()), None),
+        }
     } else {
-        Fragment { children: (None, Some(f2())) }
+        Fragment {
+            children: (None, Some(f2())),
+        }
     }
 }
