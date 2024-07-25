@@ -31,7 +31,7 @@ fn write_attributes<W: Write>(maybe_attributes: &Attributes<'_>, writer: &mut W)
 }
 
 impl<T: Render + Clone> Render for SimpleElement<'_, T> {
-    fn render_into<W: Write>(&self, writer: &mut W) -> Result {
+    fn render_into(&self, writer: &mut String) -> Result {
         match &self.contents {
             None => {
                 if self.is_void_tag() {

@@ -5,7 +5,7 @@ use std::fmt::{Result, Write};
 pub struct HTML5Doctype;
 
 impl Render for HTML5Doctype {
-    fn render_into<W: Write>(&self, writer: &mut W) -> Result {
+    fn render_into(&self, writer: &mut String) -> Result {
         write!(writer, "<!DOCTYPE html>")
     }
 }
