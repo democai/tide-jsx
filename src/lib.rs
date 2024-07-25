@@ -7,7 +7,7 @@ mod render;
 mod simple_element;
 mod text_element;
 
-pub use self::render::Render;
+pub use self::render::{BoxedRender, Render};
 pub use branch::branch;
 pub use fragment::Fragment;
 pub use simple_element::SimpleElement;

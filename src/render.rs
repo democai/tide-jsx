@@ -1,5 +1,7 @@
 use std::fmt::{Result, Write};
 
+pub type BoxedRender = Box<dyn Render>;
+
 /// Render a component
 ///
 /// This is the underlying mechanism of the `#[component]` macro
