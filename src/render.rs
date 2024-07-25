@@ -3,7 +3,7 @@ use std::fmt::Result;
 /// Render a component
 ///
 /// This is the underlying mechanism of the `#[component]` macro
-pub trait Render: Clone {
+pub trait Render{
     /// Render the component to a writer.
     /// Make sure you escape html correctly using the `render::html_escaping` module
     fn render_into(&self, writer: &mut String) -> Result;
