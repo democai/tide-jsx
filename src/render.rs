@@ -5,7 +5,7 @@ pub type BoxedRender = Box<dyn Render>;
 /// Render a component
 ///
 /// This is the underlying mechanism of the `#[component]` macro
-pub trait Render: Sized {
+pub trait Render: Sized + Clone {
     /// Render the component to a writer.
     /// Make sure you escape html correctly using the `render::html_escaping` module
     fn render_into<W: Write>(&mut self, writer: &mut W) -> Result;
