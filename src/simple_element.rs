@@ -15,10 +15,11 @@ pub struct SimpleElement<'a, T: Render + Clone> {
     pub contents: Option<T>,
 }
 
-fn write_attributes<W: Write>(maybe_attributes: &mut Attributes<'_>, writer: &mut W) -> Result {
+fn write_attributes<W: Write>(maybe_attributes: &Attributes<'_>, writer: &mut W) -> Result {
     match maybe_attributes {
         None => Ok(()),
         Some(attributes) => {
+            let mut attributes = attributes.clone();
             for (key, value) in attributes.drain() {
                 write!(writer, " {}=\"", key)?;
                 escape_html(&value, writer)?;
@@ -30,22 +31,22 @@ fn write_attributes<W: Write>(maybe_attributes: &mut Attributes<'_>, writer: &mu
 }
 
 impl<T: Render + Clone> Render for SimpleElement<'_, T> {
-    fn render_into<W: Write>(&mut self, writer: &mut W) -> Result {
-        match &mut self.contents {
+    fn render_into<W: Write>(&self, writer: &mut W) -> Result {
+        match &self.contents {
             None => {
                 if self.is_void_tag() {
                     write!(writer, "<{}", self.tag_name)?;
-                    write_attributes(&mut self.attributes, writer)?;
+                    write_attributes(&self.attributes, writer)?;
                     write!(writer, " />")
                 } else {
                     write!(writer, "<{}", self.tag_name)?;
-                    write_attributes(&mut self.attributes, writer)?;
+                    write_attributes(&self.attributes, writer)?;
                     write!(writer, "></{}>", self.tag_name)
                 }
             }
             Some(renderable) => {
                 write!(writer, "<{}", self.tag_name)?;
-                write_attributes(&mut self.attributes, writer)?;
+                write_attributes(&self.attributes, writer)?;
                 write!(writer, ">")?;
                 renderable.render_into(writer)?;
                 write!(writer, "</{}>", self.tag_name)
