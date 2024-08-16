@@ -50,7 +50,7 @@ pub fn create_function_component(f: syn::ItemFn) -> TokenStream {
                     #inputs_reading
                     #block
                 };
-                tide_jsx::Render::render_into(result, w)
+                self.render_into(w)
             }
         }
     })
