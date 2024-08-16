@@ -50,7 +50,7 @@ pub fn create_function_component(f: syn::ItemFn) -> TokenStream {
                     #inputs_reading
                     #block
                 };
-                self.render_into(w)
+                result.render_into(w)
             }
         }
     })
